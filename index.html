@@ -207,6 +207,7 @@ footer{background:var(--bg);border-top:1px solid var(--border);padding:1.8rem 6%
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.65rem 1.15rem;font-size:.83rem;color:var(--text);z-index:3000;animation:fadeInUp .25s ease;pointer-events:none}
 .toast.success{border-color:var(--success);color:var(--success)}
 .toast.error{border-color:var(--danger);color:var(--danger)}
+.toast.warning{border-color:var(--warning);color:var(--warning)}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .empty-state{text-align:center;padding:3rem;color:var(--text3);font-size:.88rem}
 .empty-state svg{opacity:.2;margin-bottom:.8rem}
@@ -305,6 +306,20 @@ footer{background:var(--bg);border-top:1px solid var(--border);padding:1.8rem 6%
 /* === HERO STAT HOVER === */
 .hero-stats > div{transition:.2s;cursor:default}
 .hero-stats > div:hover .stat-num{color:var(--accent3)}
+
+
+/* SAVING BAR */
+.saving-bar{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.6rem 1.3rem;font-size:.83rem;color:var(--text);z-index:4000;animation:fadeInUp .25s ease;white-space:nowrap}
+.saving-bar.ok{border-color:var(--success);color:var(--success)}
+.saving-bar.err{border-color:var(--warning);color:var(--warning)}
+
+/* LOAD OVERLAY */
+#load-overlay{position:fixed;inset:0;background:var(--bg);z-index:5000;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.load-spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* SETTINGS BIN ID */
+.bin-id-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.5rem .9rem;font-size:.78rem;color:var(--text2);word-break:break-all;margin-top:.5rem}
 
 </style>
 </head>
@@ -608,6 +623,18 @@ footer{background:var(--bg);border-top:1px solid var(--border);padding:1.8rem 6%
           <div class="fi-group"><label class="fi-label">Confirm Password</label><input class="fi" id="set-pass2" type="password" placeholder="Confirm new password"></div>
           <button class="btn-save" onclick="changePassword()">Update Password</button>
         </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.8rem;max-width:420px;margin-top:1rem">
+          <p style="font-size:.85rem;color:var(--text2);margin-bottom:.8rem">Your JSONBin ID — back this up so you don't lose your data:</p>
+          <div class="bin-id-box" id="bin-id-display">Not saved yet</div>
+          <button class="btn-save" style="margin-top:.8rem" onclick="copyBinId()">Copy Bin ID</button>
+          <div style="margin-top:1rem">
+            <label class="fi-label">Restore from existing Bin ID</label>
+            <div style="display:flex;gap:.5rem;margin-top:.35rem">
+              <input class="fi" id="restore-bin-input" placeholder="Paste Bin ID here" style="margin-top:0">
+              <button class="btn-save" onclick="restoreBin()">Load</button>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   </div>
@@ -739,8 +766,72 @@ footer{background:var(--bg);border-top:1px solid var(--border);padding:1.8rem 6%
 // DATA
 let DATA={education:[],experiences:[],about:{name:'Your Name',title:'Developer',bio:'A passionate developer crafting beautiful digital experiences.',about:'Add your full bio from the dashboard.',email:'your@email.com',phone:'+44 000 000 0000',location:'London, UK',exp:'2+',avail:'Yes',photo:'',linkedin:'',github:'',twitter:'',herotag:'Available for Hire'},projects:[],skills:[],password:'admin123'};
 function load(){try{const s=localStorage.getItem('pf_data');if(s)DATA=JSON.parse(s)}catch(e){}}
-function save(){localStorage.setItem('pf_data',JSON.stringify(DATA))}
-load();
+
+// ── CLOUD CONFIG ──
+const CLOUD_NAME='dlfkw5w4f';
+const CLD_UPLOAD_PRESET='portfolio_unsigned';
+const JSONBIN_KEY='$2a$10$LX4aZnHbQTkHs1c/0aCrU.r.B1dx8RA5WUdiD/YIYVARueaHj17NS';
+const JSONBIN_URL='https://api.jsonbin.io/v3/b';
+let BIN_ID=localStorage.getItem('pf_bin_id')||'';
+
+async function save(){
+  showSaving(true);
+  try{
+    const body=JSON.stringify({record:DATA});
+    let url,method;
+    if(BIN_ID){url=JSONBIN_URL+'/'+BIN_ID;method='PUT';}
+    else{url=JSONBIN_URL;method='POST';}
+    const res=await fetch(url,{
+      method,
+      headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY,'X-Bin-Name':'portfolio'},
+      body
+    });
+    if(!res.ok)throw new Error('JSONBin error '+res.status);
+    const json=await res.json();
+    if(!BIN_ID){
+      BIN_ID=json.metadata?.id||json.metadata?.bin_id||'';
+      if(BIN_ID)localStorage.setItem('pf_bin_id',BIN_ID);
+    }
+    localStorage.setItem('pf_data',JSON.stringify(DATA));
+    showSaving(false);
+    return true;
+  }catch(e){
+    console.error('Save failed',e);
+    // fallback to localStorage
+    try{localStorage.setItem('pf_data',JSON.stringify(DATA));}catch(e2){}
+    showSaving(false,true);
+    return false;
+  }
+}
+
+async function loadFromCloud(){
+  if(!BIN_ID){
+    // try localStorage fallback
+    try{const s=localStorage.getItem('pf_data');if(s)DATA=JSON.parse(s);}catch(e){}
+    return;
+  }
+  try{
+    const res=await fetch(JSONBIN_URL+'/'+BIN_ID+'/latest',{
+      headers:{'X-Master-Key':JSONBIN_KEY}
+    });
+    if(!res.ok)throw new Error('fetch failed');
+    const json=await res.json();
+    if(json.record)DATA=json.record;
+    localStorage.setItem('pf_data',JSON.stringify(DATA));
+  }catch(e){
+    console.warn('Cloud load failed, using localStorage',e);
+    try{const s=localStorage.getItem('pf_data');if(s)DATA=JSON.parse(s);}catch(e2){}
+  }
+}
+
+function showSaving(on,err){
+  let el=document.getElementById('saving-indicator');
+  if(!el){el=document.createElement('div');el.id='saving-indicator';document.body.appendChild(el);}
+  if(on){el.textContent='☁️ Saving…';el.className='saving-bar';}
+  else if(err){el.textContent='⚠️ Saved locally (cloud unavailable)';el.className='saving-bar err';setTimeout(()=>el.remove(),3000);}
+  else{el.textContent='✅ Saved to cloud';el.className='saving-bar ok';setTimeout(()=>el.remove(),2200);}
+}
+
 
 // NAV
 function scrollSec(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth'})}
@@ -839,7 +930,18 @@ function renderAbout(){
 }
 
 function renderAll(){renderAbout();renderPortfolio();renderSkills();renderExperience();renderEducation()}
-renderAll();
+
+// ── INIT: load from cloud then render ──
+(async function init(){
+  // show loading overlay
+  const ov=document.createElement('div');
+  ov.id='load-overlay';
+  ov.innerHTML='<div class="load-spinner"></div><div style="margin-top:1rem;font-size:.9rem;color:var(--text2)">Loading portfolio…</div>';
+  document.body.appendChild(ov);
+  await loadFromCloud();
+  renderAll();
+  ov.remove();
+})();
 
 // DASHBOARD
 function openDash(){
@@ -856,7 +958,7 @@ function doLogin(){
 function showDash(){
   document.getElementById('site').style.display='none';
   document.getElementById('dashboard').style.display='block';
-  renderDashProj();renderDashSkills();renderDashExp();renderDashEdu();loadAboutForm();
+  renderDashProj();renderDashSkills();renderDashExp();renderDashEdu();loadAboutForm();updateBinDisplay();
 }
 function closeDash(){
   document.getElementById('site').style.display='';
@@ -912,13 +1014,50 @@ function openProjModal(id){
 function editProj(id){openProjModal(id)}
 function delProj(id){if(!confirm('Delete this project?'))return;DATA.projects=DATA.projects.filter(p=>p.id!==id);save();renderDashProj();showToast('Project deleted')}
 
-function handleImgFiles(files){
-  Array.from(files).forEach(file=>{
-    const reader=new FileReader();
-    reader.onload=e=>{imgUrls.push(e.target.result);renderImgThumbs()};
-    reader.readAsDataURL(file);
-  });
+
+// ── CLOUDINARY UPLOAD ──
+async function uploadToCloudinary(file){
+  const fd=new FormData();
+  fd.append('file',file);
+  fd.append('upload_preset','portfolio_unsigned');
+  fd.append('api_key','738721787464369');
+  const res=await fetch('https://api.cloudinary.com/v1_1/dlfkw5w4f/image/upload',{method:'POST',body:fd});
+  if(!res.ok)throw new Error('Cloudinary upload failed '+res.status);
+  const json=await res.json();
+  return json.secure_url;
 }
+
+async function handleImgFiles(files){
+  const arr=Array.from(files);
+  for(const file of arr){
+    showToast('Uploading image…');
+    try{
+      const url=await uploadToCloudinary(file);
+      imgUrls.push(url);
+      renderImgThumbs();
+      showToast('Image uploaded ✅','success');
+    }catch(e){
+      console.error(e);
+      showToast('Upload failed — check Cloudinary preset','error');
+    }
+  }
+}
+
+async function handlePhotoFile(file){
+  if(!file)return;
+  showToast('Uploading photo…');
+  try{
+    const url=await uploadToCloudinary(file);
+    photoBase64=url;
+    const prev=document.getElementById('photo-preview-el');
+    if(prev)prev.innerHTML=`<img src="${url}" alt="Profile">`;
+    showToast('Photo uploaded ✅','success');
+  }catch(e){
+    console.error(e);
+    showToast('Photo upload failed','error');
+  }
+}
+
 function renderImgThumbs(){
   const el=document.getElementById('proj-img-thumbs');
   if(!el)return;
@@ -932,7 +1071,7 @@ function saveProject(){
   const images=imgUrls.filter(Boolean);
   const proj={id:editProjId||Date.now().toString(),title,description:document.getElementById('proj-desc').value.trim(),tags,images,live:document.getElementById('proj-live').value.trim(),github:document.getElementById('proj-github').value.trim()};
   if(editProjId){DATA.projects=DATA.projects.map(p=>p.id===editProjId?proj:p)}else{DATA.projects.unshift(proj)}
-  save();closeModal('proj-modal');renderDashProj();showToast('Project saved','success');
+  if(save()){closeModal('proj-modal');renderDashProj();showToast('Project saved','success');}
 }
 
 // SKILL MODAL
@@ -955,21 +1094,12 @@ function saveSkill(){
   if(!name){showToast('Skill name is required','error');return}
   const skill={id:editSkillId||Date.now().toString(),name,icon:document.getElementById('skill-icon').value.trim(),category:document.getElementById('skill-cat').value.trim(),level:parseInt(document.getElementById('skill-level').value)};
   if(editSkillId){DATA.skills=DATA.skills.map(s=>s.id===editSkillId?skill:s)}else{DATA.skills.push(skill)}
-  save();closeModal('skill-modal');renderDashSkills();showToast('Skill saved','success');
+  if(save()){closeModal('skill-modal');renderDashSkills();showToast('Skill saved','success');}
 }
 
 // ABOUT
 let photoBase64='';
-function handlePhotoFile(file){
-  if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    photoBase64=e.target.result;
-    const prev=document.getElementById('photo-preview-el');
-    if(prev)prev.innerHTML=`<img src="${photoBase64}" alt="Profile">`;
-  };
-  reader.readAsDataURL(file);
-}
+
 function clearPhoto(){
   photoBase64='';
   const prev=document.getElementById('photo-preview-el');
@@ -1002,7 +1132,7 @@ function saveAbout(){
     github:document.getElementById('af-github').value.trim(),
     twitter:document.getElementById('af-twitter').value.trim()
   };
-  save();showToast('Info saved!','success');
+  if(save())showToast('Info saved!','success');
 }
 
 // SETTINGS
@@ -1116,7 +1246,7 @@ function saveEdu(){
   };
   if(editEduId){DATA.education=(DATA.education||[]).map(e=>e.id===editEduId?edu:e)}
   else{if(!DATA.education)DATA.education=[];DATA.education.unshift(edu)}
-  save();closeModal('edu-modal');renderDashEdu();showToast('Qualification saved','success');
+  if(save()){closeModal('edu-modal');renderDashEdu();showToast('Qualification saved','success');}
 }
 
 // EXPERIENCE
@@ -1217,7 +1347,30 @@ function saveExp(){
   };
   if(editExpId){DATA.experiences=(DATA.experiences||[]).map(e=>e.id===editExpId?exp:e)}
   else{if(!DATA.experiences)DATA.experiences=[];DATA.experiences.unshift(exp)}
-  save();closeModal('exp-modal');renderDashExp();showToast('Experience saved','success');
+  if(save()){closeModal('exp-modal');renderDashExp();showToast('Experience saved','success');}
+}
+
+
+// ── BIN HELPERS ──
+function copyBinId(){
+  if(!BIN_ID){showToast('No Bin ID yet — save something first','error');return;}
+  navigator.clipboard.writeText(BIN_ID).then(()=>showToast('Bin ID copied!','success'));
+}
+async function restoreBin(){
+  const id=document.getElementById('restore-bin-input')?.value.trim();
+  if(!id){showToast('Enter a Bin ID','error');return;}
+  BIN_ID=id;
+  localStorage.setItem('pf_bin_id',BIN_ID);
+  showToast('Loading data from cloud…');
+  await loadFromCloud();
+  renderAll();
+  renderDashProj();renderDashSkills();renderDashExp();renderDashEdu();loadAboutForm();updateBinDisplay();
+  showToast('Data restored!','success');
+  updateBinDisplay();
+}
+function updateBinDisplay(){
+  const el=document.getElementById('bin-id-display');
+  if(el)el.textContent=BIN_ID||'Not saved yet — save something first';
 }
 
 // HELPERS
