@@ -817,21 +817,30 @@ async function save(){
 }
 
 async function loadFromCloud(){
-  // always try localStorage first for speed
+  // always load localStorage first (instant)
   try{const s=localStorage.getItem('pf_data');if(s)DATA=JSON.parse(s);}catch(e){}
-  if(!BIN_ID)return;
+  if(!BIN_ID){console.log('No Bin ID — using local data');return;}
   try{
+    const controller=new AbortController();
+    const t=setTimeout(()=>controller.abort(),4000);
     const res=await fetch(JSONBIN_URL+'/'+BIN_ID+'/latest',{
-      headers:{'X-Master-Key':JSONBIN_KEY,'X-Bin-Meta':'false'}
+      headers:{'X-Master-Key':JSONBIN_KEY,'X-Bin-Meta':'false'},
+      signal:controller.signal
     });
-    if(!res.ok)throw new Error('JSONBin load '+res.status);
+    clearTimeout(t);
+    if(!res.ok)throw new Error('JSONBin '+res.status);
     const json=await res.json();
-    // JSONBin wraps in {record:{...}} when X-Bin-Meta is true, but with false it returns data directly
     DATA=json.record||json;
+    // make sure essential arrays exist
+    if(!DATA.projects)DATA.projects=[];
+    if(!DATA.skills)DATA.skills=[];
+    if(!DATA.experiences)DATA.experiences=[];
+    if(!DATA.education)DATA.education=[];
+    if(!DATA.about)DATA.about={};
     localStorage.setItem('pf_data',JSON.stringify(DATA));
-    console.log('Loaded from cloud ✅');
+    console.log('✅ Loaded from cloud');
   }catch(e){
-    console.warn('Cloud load failed, using localStorage fallback:',e.message);
+    console.warn('Cloud load failed, using local data:',e.message);
   }
 }
 
@@ -944,14 +953,27 @@ function renderAll(){renderAbout();renderPortfolio();renderSkills();renderExperi
 
 // ── INIT: load from cloud then render ──
 (async function init(){
-  // show loading overlay
   const ov=document.createElement('div');
   ov.id='load-overlay';
   ov.innerHTML='<div class="load-spinner"></div><div style="margin-top:1rem;font-size:.9rem;color:var(--text2)">Loading portfolio…</div>';
   document.body.appendChild(ov);
-  await loadFromCloud();
+  // always remove overlay after 5 seconds max
+  const safetyTimer=setTimeout(()=>{
+    console.warn('Load timeout — showing site with local data');
+    ov.remove();
+  },5000);
+  try{
+    await Promise.race([
+      loadFromCloud(),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),4500))
+    ]);
+  }catch(e){
+    console.warn('Cloud load timed out or failed:',e.message);
+    try{const s=localStorage.getItem('pf_data');if(s)DATA=JSON.parse(s);}catch(e2){}
+  }
+  clearTimeout(safetyTimer);
   renderAll();
-  ov.remove();
+  if(ov.parentNode)ov.remove();
 })();
 
 // DASHBOARD
