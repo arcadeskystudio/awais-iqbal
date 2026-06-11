@@ -776,51 +776,62 @@ let BIN_ID=localStorage.getItem('pf_bin_id')||'';
 
 async function save(){
   showSaving(true);
+  // always save to localStorage as backup
+  try{localStorage.setItem('pf_data',JSON.stringify(DATA));}catch(e){}
   try{
-    const body=JSON.stringify({record:DATA});
+    const payload=JSON.stringify(DATA);
     let url,method;
     if(BIN_ID){url=JSONBIN_URL+'/'+BIN_ID;method='PUT';}
     else{url=JSONBIN_URL;method='POST';}
     const res=await fetch(url,{
       method,
-      headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY,'X-Bin-Name':'portfolio'},
-      body
+      headers:{
+        'Content-Type':'application/json',
+        'X-Master-Key':JSONBIN_KEY,
+        'X-Bin-Name':'portfolio',
+        'X-Bin-Private':'false'
+      },
+      body:payload
     });
-    if(!res.ok)throw new Error('JSONBin error '+res.status);
-    const json=await res.json();
-    if(!BIN_ID){
-      BIN_ID=json.metadata?.id||json.metadata?.bin_id||'';
-      if(BIN_ID)localStorage.setItem('pf_bin_id',BIN_ID);
+    const text=await res.text();
+    if(!res.ok){
+      console.error('JSONBin error',res.status,text);
+      throw new Error('JSONBin '+res.status+': '+text.slice(0,100));
     }
-    localStorage.setItem('pf_data',JSON.stringify(DATA));
+    const json=JSON.parse(text);
+    if(!BIN_ID){
+      BIN_ID=json.metadata?.id||'';
+      if(BIN_ID){
+        localStorage.setItem('pf_bin_id',BIN_ID);
+        updateBinDisplay();
+        console.log('New Bin created:',BIN_ID);
+      }
+    }
     showSaving(false);
     return true;
   }catch(e){
-    console.error('Save failed',e);
-    // fallback to localStorage
-    try{localStorage.setItem('pf_data',JSON.stringify(DATA));}catch(e2){}
+    console.error('Cloud save failed:',e.message);
     showSaving(false,true);
     return false;
   }
 }
 
 async function loadFromCloud(){
-  if(!BIN_ID){
-    // try localStorage fallback
-    try{const s=localStorage.getItem('pf_data');if(s)DATA=JSON.parse(s);}catch(e){}
-    return;
-  }
+  // always try localStorage first for speed
+  try{const s=localStorage.getItem('pf_data');if(s)DATA=JSON.parse(s);}catch(e){}
+  if(!BIN_ID)return;
   try{
     const res=await fetch(JSONBIN_URL+'/'+BIN_ID+'/latest',{
-      headers:{'X-Master-Key':JSONBIN_KEY}
+      headers:{'X-Master-Key':JSONBIN_KEY,'X-Bin-Meta':'false'}
     });
-    if(!res.ok)throw new Error('fetch failed');
+    if(!res.ok)throw new Error('JSONBin load '+res.status);
     const json=await res.json();
-    if(json.record)DATA=json.record;
+    // JSONBin wraps in {record:{...}} when X-Bin-Meta is true, but with false it returns data directly
+    DATA=json.record||json;
     localStorage.setItem('pf_data',JSON.stringify(DATA));
+    console.log('Loaded from cloud ✅');
   }catch(e){
-    console.warn('Cloud load failed, using localStorage',e);
-    try{const s=localStorage.getItem('pf_data');if(s)DATA=JSON.parse(s);}catch(e2){}
+    console.warn('Cloud load failed, using localStorage fallback:',e.message);
   }
 }
 
