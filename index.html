@@ -360,6 +360,12 @@ footer{background:var(--bg);border-top:1px solid var(--border);padding:1.8rem 6%
 .popup-nav-btn:disabled{opacity:.3;cursor:default}
 .popup-counter{font-size:.78rem;color:var(--text3)}
 
+
+/* WHAT I DID */
+#popup-whatidid .desc-list{margin:.4rem 0 .3rem 1rem}
+#popup-whatidid .desc-list li{font-size:.85rem;color:var(--text2);line-height:1.6}
+#popup-whatidid .desc-list li::marker{color:var(--accent2)}
+#popup-whatidid .desc-p{font-size:.85rem;color:var(--text2);line-height:1.6;margin-bottom:.3rem}
 </style>
 </head>
 <body>
@@ -690,6 +696,7 @@ footer{background:var(--bg);border-top:1px solid var(--border);padding:1.8rem 6%
       <div class="fi-group"><label class="fi-label">Live URL</label><input class="fi" id="proj-live" placeholder="https://..."></div>
     </div>
     <div class="fi-group"><label class="fi-label">GitHub URL</label><input class="fi" id="proj-github" placeholder="https://github.com/..."></div>
+    <div class="fi-group"><label class="fi-label">What I Did (shown only in popup)</label><textarea class="fi" id="proj-whatidid" rows="4" placeholder="- Designed the full game architecture&#10;- Built AI enemy behaviour&#10;- Integrated AdMob for monetisation&#10;- Published to Google Play Store"></textarea></div>
     <div class="fi-group">
       <label class="fi-label">Images — add multiple for auto-sliding slideshow</label>
       <div class="upload-zone" id="proj-upload-zone">
@@ -723,6 +730,10 @@ footer{background:var(--bg);border-top:1px solid var(--border);padding:1.8rem 6%
         <div class="popup-title" id="popup-title"></div>
         <div class="popup-section-label">About this project</div>
         <div id="popup-desc"></div>
+        <div class="popup-whatidid-wrap">
+          <div class="popup-section-label" style="margin-top:1.4rem">What I Did</div>
+          <div id="popup-whatidid"></div>
+        </div>
         <div class="popup-links" id="popup-links"></div>
       </div>
     </div>
@@ -1114,6 +1125,7 @@ function openProjModal(id){
   document.getElementById('proj-tags').value=(p?.tags||[]).join(', ');
   document.getElementById('proj-live').value=p?.live||'';
   document.getElementById('proj-github').value=p?.github||'';
+  document.getElementById('proj-whatidid').value=p?.whatIdid||'';
   imgUrls=[...(p?.images||[])];
   renderImgThumbs();
   // reset file input
@@ -1178,7 +1190,7 @@ function saveProject(){
   if(!title){showToast('Title is required','error');return}
   const tags=document.getElementById('proj-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
   const images=imgUrls.filter(Boolean);
-  const proj={id:editProjId||Date.now().toString(),title,description:document.getElementById('proj-desc').value.trim(),tags,images,live:document.getElementById('proj-live').value.trim(),github:document.getElementById('proj-github').value.trim()};
+  const proj={id:editProjId||Date.now().toString(),title,description:document.getElementById('proj-desc').value.trim(),tags,images,live:document.getElementById('proj-live').value.trim(),github:document.getElementById('proj-github').value.trim(),whatIdid:document.getElementById('proj-whatidid').value.trim()};
   if(editProjId){DATA.projects=DATA.projects.map(p=>p.id===editProjId?proj:p)}else{DATA.projects.unshift(proj)}
   if(save()){closeModal('proj-modal');renderDashProj();showToast('Project saved','success');}
 }
@@ -1565,6 +1577,15 @@ function renderPopup(){
 
   // description
   document.getElementById('popup-desc').innerHTML=formatDesc(p.description||'');
+
+  // what i did
+  const whatIDidEl=document.getElementById('popup-whatidid');
+  if(p.whatIdid&&p.whatIdid.trim()){
+    whatIDidEl.innerHTML=formatDesc(p.whatIdid);
+    whatIDidEl.closest('.popup-whatidid-wrap').style.display='';
+  }else{
+    whatIDidEl.closest('.popup-whatidid-wrap').style.display='none';
+  }
 
   // links
   const live=p.live?`<a href="${p.live}" target="_blank" class="popup-link-btn popup-link-live"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>Live Demo</a>`:'';
