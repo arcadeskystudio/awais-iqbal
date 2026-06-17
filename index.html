@@ -366,6 +366,41 @@ footer{background:var(--bg);border-top:1px solid var(--border);padding:1.8rem 6%
 #popup-whatidid .desc-list li{font-size:.85rem;color:var(--text2);line-height:1.6}
 #popup-whatidid .desc-list li::marker{color:var(--accent2)}
 #popup-whatidid .desc-p{font-size:.85rem;color:var(--text2);line-height:1.6;margin-bottom:.3rem}
+
+/* RICH TEXT EDITOR */
+.rte-wrap{border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-top:.35rem}
+.rte-toolbar{background:var(--bg3);border-bottom:1px solid var(--border);padding:.35rem .5rem;display:flex;flex-wrap:wrap;gap:.25rem;align-items:center}
+.rte-btn{background:transparent;border:1px solid transparent;color:var(--text2);width:28px;height:26px;border-radius:5px;font-size:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:.15s;flex-shrink:0}
+.rte-btn:hover{background:var(--bg4);border-color:var(--border);color:var(--text)}
+.rte-btn.active{background:rgba(108,99,255,.2);border-color:var(--accent);color:var(--accent2)}
+.rte-sep{width:1px;height:18px;background:var(--border);margin:0 .15rem;flex-shrink:0}
+.rte-select{background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text2);font-size:.75rem;padding:.15rem .35rem;font-family:inherit;cursor:pointer;outline:none}
+.rte-select:focus{border-color:var(--accent)}
+.rte-editor{min-height:110px;padding:.7rem .9rem;outline:none;font-size:.88rem;color:var(--text);line-height:1.7;background:var(--bg3)}
+.rte-editor:focus{background:var(--bg3)}
+.rte-editor h1{font-size:1.3rem;font-weight:700;margin:.4rem 0}
+.rte-editor h2{font-size:1.1rem;font-weight:600;margin:.35rem 0}
+.rte-editor h3{font-size:.95rem;font-weight:600;margin:.3rem 0}
+.rte-editor ul{padding-left:1.3rem;margin:.3rem 0}
+.rte-editor ol{padding-left:1.3rem;margin:.3rem 0}
+.rte-editor li{margin:.15rem 0}
+.rte-editor b,.rte-editor strong{color:var(--text);font-weight:700}
+.rte-editor u{text-decoration:underline;text-decoration-color:var(--accent2)}
+.rte-editor blockquote{border-left:3px solid var(--accent);padding-left:.8rem;color:var(--text2);margin:.4rem 0;font-style:italic}
+.rte-editor a{color:var(--accent2)}
+/* popup rich content */
+.rich-content h1{font-size:1.2rem;font-weight:700;color:var(--text);margin:.5rem 0 .3rem}
+.rich-content h2{font-size:1rem;font-weight:600;color:var(--text);margin:.45rem 0 .25rem}
+.rich-content h3{font-size:.9rem;font-weight:600;color:var(--text);margin:.4rem 0 .2rem}
+.rich-content ul{padding-left:1.3rem;margin:.3rem 0}
+.rich-content ol{padding-left:1.3rem;margin:.3rem 0}
+.rich-content li{font-size:.85rem;color:var(--text2);line-height:1.6;margin:.12rem 0}
+.rich-content li::marker{color:var(--accent2)}
+.rich-content p{font-size:.85rem;color:var(--text2);line-height:1.65;margin:.2rem 0}
+.rich-content b,.rich-content strong{color:var(--text);font-weight:700}
+.rich-content u{text-decoration:underline;text-decoration-color:var(--accent2)}
+.rich-content blockquote{border-left:3px solid var(--accent);padding-left:.8rem;color:var(--text2);margin:.5rem 0;font-style:italic}
+
 </style>
 </head>
 <body>
@@ -690,13 +725,100 @@ footer{background:var(--bg);border-top:1px solid var(--border);padding:1.8rem 6%
   <div class="modal">
     <h3 class="modal-title" id="proj-modal-title">Add Project</h3>
     <div class="fi-group"><label class="fi-label">Project Title *</label><input class="fi" id="proj-title" placeholder="My Awesome Project"></div>
-    <div class="fi-group"><label class="fi-label">Description</label><textarea class="fi" id="proj-desc" rows="3" placeholder="What does this project do?"></textarea></div>
+    <div class="fi-group"><label class="fi-label">Description</label><div class="rte-wrap" id="rte-wrap-proj-desc">
+      <div class="rte-toolbar">
+        <select class="rte-select" onchange="rteBlock(this)" title="Heading">
+          <option value="p">Paragraph</option>
+          <option value="h1">Heading 1</option>
+          <option value="h2">Heading 2</option>
+          <option value="h3">Heading 3</option>
+        </select>
+        <div class="rte-sep"></div>
+        <button type="button" class="rte-btn" onclick="rteExec('bold')" title="Bold"><b>B</b></button>
+        <button type="button" class="rte-btn" onclick="rteExec('italic')" title="Italic"><i>I</i></button>
+        <button type="button" class="rte-btn" onclick="rteExec('underline')" title="Underline"><u>U</u></button>
+        <button type="button" class="rte-btn" onclick="rteExec('strikeThrough')" title="Strike"><s>S</s></button>
+        <div class="rte-sep"></div>
+        <button type="button" class="rte-btn" onclick="rteExec('insertUnorderedList')" title="Bullet list">• ≡</button>
+        <button type="button" class="rte-btn" onclick="rteExec('insertOrderedList')" title="Numbered list">1 ≡</button>
+        <button type="button" class="rte-btn" onclick="rteExec('formatBlock','blockquote')" title="Quote">❝</button>
+        <div class="rte-sep"></div>
+        <button type="button" class="rte-btn" onclick="rteExec('removeFormat')" title="Clear format">✕</button>
+      </div>
+      <div class="rte-editor" id="proj-desc" contenteditable="true" data-placeholder="What does this project do?" oninput="rteUpdate('proj-desc')"></div>
+    </div></div>
     <div class="fi-row">
       <div class="fi-group"><label class="fi-label">Tags (comma separated)</label><input class="fi" id="proj-tags" placeholder="React, Node.js"></div>
       <div class="fi-group"><label class="fi-label">Live URL</label><input class="fi" id="proj-live" placeholder="https://..."></div>
     </div>
     <div class="fi-group"><label class="fi-label">GitHub URL</label><input class="fi" id="proj-github" placeholder="https://github.com/..."></div>
-    <div class="fi-group"><label class="fi-label">What I Did (shown only in popup)</label><textarea class="fi" id="proj-whatidid" rows="4" placeholder="- Designed the full game architecture&#10;- Built AI enemy behaviour&#10;- Integrated AdMob for monetisation&#10;- Published to Google Play Store"></textarea></div>
+    <div class="fi-group"><label class="fi-label">What I Did <span style="font-size:.72rem;color:var(--text3)">(shown only in popup)</span></label><div class="rte-wrap" id="rte-wrap-proj-whatidid">
+      <div class="rte-toolbar">
+        <select class="rte-select" onchange="rteBlock(this)" title="Heading">
+          <option value="p">Paragraph</option>
+          <option value="h1">Heading 1</option>
+          <option value="h2">Heading 2</option>
+          <option value="h3">Heading 3</option>
+        </select>
+        <div class="rte-sep"></div>
+        <button type="button" class="rte-btn" onclick="rteExec('bold')" title="Bold"><b>B</b></button>
+        <button type="button" class="rte-btn" onclick="rteExec('italic')" title="Italic"><i>I</i></button>
+        <button type="button" class="rte-btn" onclick="rteExec('underline')" title="Underline"><u>U</u></button>
+        <button type="button" class="rte-btn" onclick="rteExec('strikeThrough')" title="Strike"><s>S</s></button>
+        <div class="rte-sep"></div>
+        <button type="button" class="rte-btn" onclick="rteExec('insertUnorderedList')" title="Bullet list">• ≡</button>
+        <button type="button" class="rte-btn" onclick="rteExec('insertOrderedList')" title="Numbered list">1 ≡</button>
+        <button type="button" class="rte-btn" onclick="rteExec('formatBlock','blockquote')" title="Quote">❝</button>
+        <div class="rte-sep"></div>
+        <button type="button" class="rte-btn" onclick="rteExec('removeFormat')" title="Clear format">✕</button>
+      </div>
+      <div class="rte-editor" id="proj-whatidid" contenteditable="true" data-placeholder="Describe what you built and your role..." oninput="rteUpdate('proj-whatidid')"></div>
+    </div></div>
+
+    <div class="fi-group"><label class="fi-label">Problems Faced <span style="font-size:.72rem;color:var(--text3)">(shown only in popup)</span></label><div class="rte-wrap" id="rte-wrap-proj-problems">
+      <div class="rte-toolbar">
+        <select class="rte-select" onchange="rteBlock(this)" title="Heading">
+          <option value="p">Paragraph</option>
+          <option value="h1">Heading 1</option>
+          <option value="h2">Heading 2</option>
+          <option value="h3">Heading 3</option>
+        </select>
+        <div class="rte-sep"></div>
+        <button type="button" class="rte-btn" onclick="rteExec('bold')" title="Bold"><b>B</b></button>
+        <button type="button" class="rte-btn" onclick="rteExec('italic')" title="Italic"><i>I</i></button>
+        <button type="button" class="rte-btn" onclick="rteExec('underline')" title="Underline"><u>U</u></button>
+        <button type="button" class="rte-btn" onclick="rteExec('strikeThrough')" title="Strike"><s>S</s></button>
+        <div class="rte-sep"></div>
+        <button type="button" class="rte-btn" onclick="rteExec('insertUnorderedList')" title="Bullet list">• ≡</button>
+        <button type="button" class="rte-btn" onclick="rteExec('insertOrderedList')" title="Numbered list">1 ≡</button>
+        <button type="button" class="rte-btn" onclick="rteExec('formatBlock','blockquote')" title="Quote">❝</button>
+        <div class="rte-sep"></div>
+        <button type="button" class="rte-btn" onclick="rteExec('removeFormat')" title="Clear format">✕</button>
+      </div>
+      <div class="rte-editor" id="proj-problems" contenteditable="true" data-placeholder="Challenges and how you solved them..." oninput="rteUpdate('proj-problems')"></div>
+    </div></div>
+    <div class="fi-group"><label class="fi-label">Future Goals <span style="font-size:.72rem;color:var(--text3)">(shown only in popup)</span></label><div class="rte-wrap" id="rte-wrap-proj-goals">
+      <div class="rte-toolbar">
+        <select class="rte-select" onchange="rteBlock(this)" title="Heading">
+          <option value="p">Paragraph</option>
+          <option value="h1">Heading 1</option>
+          <option value="h2">Heading 2</option>
+          <option value="h3">Heading 3</option>
+        </select>
+        <div class="rte-sep"></div>
+        <button type="button" class="rte-btn" onclick="rteExec('bold')" title="Bold"><b>B</b></button>
+        <button type="button" class="rte-btn" onclick="rteExec('italic')" title="Italic"><i>I</i></button>
+        <button type="button" class="rte-btn" onclick="rteExec('underline')" title="Underline"><u>U</u></button>
+        <button type="button" class="rte-btn" onclick="rteExec('strikeThrough')" title="Strike"><s>S</s></button>
+        <div class="rte-sep"></div>
+        <button type="button" class="rte-btn" onclick="rteExec('insertUnorderedList')" title="Bullet list">• ≡</button>
+        <button type="button" class="rte-btn" onclick="rteExec('insertOrderedList')" title="Numbered list">1 ≡</button>
+        <button type="button" class="rte-btn" onclick="rteExec('formatBlock','blockquote')" title="Quote">❝</button>
+        <div class="rte-sep"></div>
+        <button type="button" class="rte-btn" onclick="rteExec('removeFormat')" title="Clear format">✕</button>
+      </div>
+      <div class="rte-editor" id="proj-goals" contenteditable="true" data-placeholder="What you plan to add or improve..." oninput="rteUpdate('proj-goals')"></div>
+    </div></div>
     <div class="fi-group">
       <label class="fi-label">Images — add multiple for auto-sliding slideshow</label>
       <div class="upload-zone" id="proj-upload-zone">
@@ -729,10 +851,18 @@ footer{background:var(--bg);border-top:1px solid var(--border);padding:1.8rem 6%
         <div class="popup-tags" id="popup-tags"></div>
         <div class="popup-title" id="popup-title"></div>
         <div class="popup-section-label">About this project</div>
-        <div id="popup-desc"></div>
+        <div id="popup-desc" class="rich-content"></div>
         <div class="popup-whatidid-wrap">
           <div class="popup-section-label" style="margin-top:1.4rem">What I Did</div>
-          <div id="popup-whatidid"></div>
+          <div id="popup-whatidid" class="rich-content"></div>
+        </div>
+        <div class="popup-problems-wrap">
+          <div class="popup-section-label" style="margin-top:1.4rem">Problems Faced</div>
+          <div id="popup-problems" class="rich-content"></div>
+        </div>
+        <div class="popup-goals-wrap">
+          <div class="popup-section-label" style="margin-top:1.4rem">Future Goals</div>
+          <div id="popup-goals" class="rich-content"></div>
         </div>
         <div class="popup-links" id="popup-links"></div>
       </div>
@@ -1121,11 +1251,15 @@ function openProjModal(id){
   const p=id?DATA.projects.find(x=>x.id===id):null;
   document.getElementById('proj-modal-title').textContent=id?'Edit Project':'Add Project';
   document.getElementById('proj-title').value=p?.title||'';
-  document.getElementById('proj-desc').value=p?.description||'';
   document.getElementById('proj-tags').value=(p?.tags||[]).join(', ');
   document.getElementById('proj-live').value=p?.live||'';
   document.getElementById('proj-github').value=p?.github||'';
-  document.getElementById('proj-whatidid').value=p?.whatIdid||'';
+  // set rich editors
+  const setRte=(id,val)=>{const el=document.getElementById(id);if(el)el.innerHTML=val||'';};
+  setRte('proj-desc',p?.description||'');
+  setRte('proj-whatidid',p?.whatIdid||'');
+  setRte('proj-problems',p?.problems||'');
+  setRte('proj-goals',p?.goals||'');
   imgUrls=[...(p?.images||[])];
   renderImgThumbs();
   // reset file input
@@ -1190,7 +1324,15 @@ function saveProject(){
   if(!title){showToast('Title is required','error');return}
   const tags=document.getElementById('proj-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
   const images=imgUrls.filter(Boolean);
-  const proj={id:editProjId||Date.now().toString(),title,description:document.getElementById('proj-desc').value.trim(),tags,images,live:document.getElementById('proj-live').value.trim(),github:document.getElementById('proj-github').value.trim(),whatIdid:document.getElementById('proj-whatidid').value.trim()};
+  const proj={
+    id:editProjId||Date.now().toString(),title,tags,images,
+    description:document.getElementById('proj-desc').innerHTML.trim(),
+    live:document.getElementById('proj-live').value.trim(),
+    github:document.getElementById('proj-github').value.trim(),
+    whatIdid:document.getElementById('proj-whatidid').innerHTML.trim(),
+    problems:document.getElementById('proj-problems').innerHTML.trim(),
+    goals:document.getElementById('proj-goals').innerHTML.trim()
+  };
   if(editProjId){DATA.projects=DATA.projects.map(p=>p.id===editProjId?proj:p)}else{DATA.projects.unshift(proj)}
   if(save()){closeModal('proj-modal');renderDashProj();showToast('Project saved','success');}
 }
@@ -1576,16 +1718,18 @@ function renderPopup(){
   document.getElementById('popup-title').textContent=p.title||'';
 
   // description
-  document.getElementById('popup-desc').innerHTML=formatDesc(p.description||'');
+  document.getElementById('popup-desc').innerHTML=p.description||'';
 
   // what i did
-  const whatIDidEl=document.getElementById('popup-whatidid');
-  if(p.whatIdid&&p.whatIdid.trim()){
-    whatIDidEl.innerHTML=formatDesc(p.whatIdid);
-    whatIDidEl.closest('.popup-whatidid-wrap').style.display='';
-  }else{
-    whatIDidEl.closest('.popup-whatidid-wrap').style.display='none';
-  }
+  const setPopupSection=(elId,wrapClass,val)=>{
+    const el=document.getElementById(elId);
+    const wrap=document.querySelector('.'+wrapClass);
+    if(val&&val.trim()&&val!=='<br>'){el.innerHTML=val;if(wrap)wrap.style.display='';}
+    else{el.innerHTML='';if(wrap)wrap.style.display='none';}
+  };
+  setPopupSection('popup-whatidid','popup-whatidid-wrap',p.whatIdid||'');
+  setPopupSection('popup-problems','popup-problems-wrap',p.problems||'');
+  setPopupSection('popup-goals','popup-goals-wrap',p.goals||'');
 
   // links
   const live=p.live?`<a href="${p.live}" target="_blank" class="popup-link-btn popup-link-live"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>Live Demo</a>`:'';
@@ -1599,6 +1743,28 @@ function renderPopup(){
 // close on Escape key
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape')closeProjPopup();
+});
+
+
+// ── RICH TEXT EDITOR ──
+function rteExec(cmd, val){
+  document.execCommand(cmd, false, val||null);
+}
+function rteBlock(sel){
+  document.execCommand('formatBlock', false, sel.value);
+  sel.value='p'; // reset select
+}
+function rteUpdate(id){
+  // nothing needed — innerHTML read on save
+}
+// placeholder behaviour
+document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('.rte-editor').forEach(el=>{
+    const ph=el.dataset.placeholder;
+    if(!ph)return;
+    el.addEventListener('focus',()=>{if(el.innerHTML==='<br>'||!el.innerHTML)el.innerHTML='';});
+    el.addEventListener('blur',()=>{if(!el.textContent.trim())el.innerHTML='';});
+  });
 });
 
 // HELPERS
